@@ -12,20 +12,25 @@ tools:context=".MainActivity$PlaceholderFragment"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:id="@+id/edit_text_country_code"
-    android:hint="@string/edit_text_country_code_hint" />
+    android:hint="@string/edit_text_country_code_hint"
+    android:textAppearance="?android:attr/textAppearanceMedium"/>
 
     <ListView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:id="@+id/list_view_result"
         android:layout_weight="0.78"
-        android:paddingTop="16dp" />
+        android:paddingTop="16dp"
+        style="@style/Base.TextAppearance.AppCompat.Small"
+        android:layout_marginTop="20dp" />
 
     <Button
     android:id="@+id/button_get_teams"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:text="@string/button_get_teams"
-        android:layout_gravity="center_horizontal" />
+    android:text="@string/button_get_matches"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="20dp"
+        android:textAppearance="?android:attr/textAppearanceMedium"/>
 
 </LinearLayout>

@@ -32,8 +32,8 @@ import java.util.List;
  */
 public class WorldCupFragment extends Fragment {
 
-    TextView mTextViewGroup;
-    ListView mListViewTeams;
+    TextView mTextViewCountryCode;
+    ListView mListViewMatches;
     final static String LOG_TAG = WorldCupFragment.class.getSimpleName();
 
     public WorldCupFragment() {
@@ -43,13 +43,13 @@ public class WorldCupFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-        mTextViewGroup = (TextView) rootView.findViewById(R.id.edit_text_country_code);
-        mListViewTeams = (ListView) rootView.findViewById(R.id.list_view_result);
+        mTextViewCountryCode = (TextView) rootView.findViewById(R.id.edit_text_country_code);
+        mListViewMatches = (ListView) rootView.findViewById(R.id.list_view_result);
         Button buttonGetTeams = (Button) rootView.findViewById(R.id.button_get_teams);
         buttonGetTeams.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String group = mTextViewGroup.getText().toString();
+                String group = mTextViewCountryCode.getText().toString();
                 new FetchTeamsTask().execute(group);
             }
         });
@@ -90,6 +90,7 @@ public class WorldCupFragment extends Fragment {
         final String HOME_TEAM= "home_team";
         final String AWAY_TEAM= "away_team";
         final String COUNTRY = "country";
+        final String GOALS = "goals";
         List<String> teams = new ArrayList<>();
         try {
             JSONArray responseJsonArray = new JSONArray(response);
@@ -100,7 +101,8 @@ public class WorldCupFragment extends Fragment {
                 objectMatch = responseJsonArray.getJSONObject(i);
                 objectAwayTeam = objectMatch.getJSONObject(AWAY_TEAM);
                 objectHomeTeam = objectMatch.getJSONObject(HOME_TEAM);
-                teams.add(objectAwayTeam.getString(COUNTRY) + " - " +objectHomeTeam.getString(COUNTRY) );
+                String result = objectAwayTeam.getString(COUNTRY) + " " + objectAwayTeam.getString(GOALS) + " - " + objectHomeTeam.getString(GOALS) + " " + objectHomeTeam.getString(COUNTRY);
+                teams.add(result);
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -143,7 +145,7 @@ public class WorldCupFragment extends Fragment {
         protected void onPostExecute(List<String> response) {
             super.onPostExecute(response);
             ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, response);
-            mListViewTeams.setAdapter(adapter);
+            mListViewMatches.setAdapter(adapter);
         }
     }
 

@@ -5,6 +5,6 @@
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="edit_text_country_code_hint">Enter country code</string>
-    <string name="button_get_teams">Get teams</string>
+    <string name="button_get_matches">Get matches</string>
 
 </resources>
