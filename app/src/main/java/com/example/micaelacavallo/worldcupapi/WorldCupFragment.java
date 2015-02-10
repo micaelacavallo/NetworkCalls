@@ -72,6 +72,7 @@ public class WorldCupFragment extends ListFragment {
             public void onClick(View v) {
                 String code = mTextViewCountryCode.getText().toString();
                 fetchReposInQueue(code);
+
             }
         });
     }
