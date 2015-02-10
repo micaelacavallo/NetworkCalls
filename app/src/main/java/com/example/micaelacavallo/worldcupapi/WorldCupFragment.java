@@ -3,7 +3,9 @@ package com.example.micaelacavallo.worldcupapi;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.ListFragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,6 +14,11 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
+
+import com.squareup.okhttp.Callback;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -30,10 +37,10 @@ import java.util.List;
 /**
  * A placeholder fragment containing a simple view.
  */
-public class WorldCupFragment extends Fragment {
+public class WorldCupFragment extends ListFragment {
 
     TextView mTextViewCountryCode;
-    ListView mListViewMatches;
+     MatchAdapter mAdapter;
     final static String LOG_TAG = WorldCupFragment.class.getSimpleName();
 
     public WorldCupFragment() {
@@ -43,17 +50,68 @@ public class WorldCupFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
+        wireUpViews(rootView);
+        prepareButton(rootView);
+        return rootView;
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        prepareListView();
+    }
+
+    private void wireUpViews(View rootView) {
         mTextViewCountryCode = (TextView) rootView.findViewById(R.id.edit_text_country_code);
-        mListViewMatches = (ListView) rootView.findViewById(R.id.list_view_result);
+    }
+
+    private void prepareButton(View rootView) {
         Button buttonGetTeams = (Button) rootView.findViewById(R.id.button_get_teams);
         buttonGetTeams.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String group = mTextViewCountryCode.getText().toString();
-                new FetchTeamsTask().execute(group);
+                String code = mTextViewCountryCode.getText().toString();
+                fetchReposInQueue(code);
             }
         });
-        return rootView;
+    }
+
+    private void fetchReposInQueue(String code) {
+        try {
+            URL url = constructURLQuery(code);
+            Request request = new Request.Builder().url(url.toString()).build();
+            OkHttpClient client = new OkHttpClient();
+            client.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Request request, IOException e) {
+                }
+
+                @Override
+                public void onResponse(Response response) throws IOException {
+                    String responseString = response.body().string();
+                    final List<Match> listOfMatches = parseResponse(responseString);
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mAdapter.clear();
+                            mAdapter.addAll(listOfMatches);
+                            mAdapter.notifyDataSetChanged();
+                        }
+                    });
+                }
+            });
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
+    private void prepareListView() {
+        List<Match> matches = new ArrayList<>();
+        mAdapter = new MatchAdapter(getActivity(), matches);
+        setListAdapter(mAdapter);
     }
 
     private URL constructURLQuery(String country) throws MalformedURLException {
@@ -71,83 +129,29 @@ public class WorldCupFragment extends Fragment {
         return new URL(uri.toString());
     }
 
-    private String readFullResponse (InputStream inputStream) throws IOException {
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-        StringBuilder stringBuilder = new StringBuilder();
-        String response = "";
-        String line;
-        while ((line = bufferedReader.readLine()) != null)
-        {
-            stringBuilder.append(line).append("\n");
-        }
-        if (stringBuilder.length()>0) {
-            response = stringBuilder.toString();
-        }
-        return response;
-    }
-
-    private List<String> parseResponse (String response) {
+    private List<Match> parseResponse (String response) {
         final String HOME_TEAM= "home_team";
         final String AWAY_TEAM= "away_team";
-        final String COUNTRY = "country";
+        final String CODE = "code";
         final String GOALS = "goals";
-        List<String> teams = new ArrayList<>();
+        final String LOCATION = "location";
+        List<Match> matches = new ArrayList<>();
+        Match match;
         try {
             JSONArray responseJsonArray = new JSONArray(response);
-            JSONObject objectMatch;
-            JSONObject objectAwayTeam;
-            JSONObject objectHomeTeam;
+            JSONObject objectMatch, objectAwayTeam, objectHomeTeam;
             for (int i = 0; i< responseJsonArray.length(); i++) {
                 objectMatch = responseJsonArray.getJSONObject(i);
                 objectAwayTeam = objectMatch.getJSONObject(AWAY_TEAM);
                 objectHomeTeam = objectMatch.getJSONObject(HOME_TEAM);
-                String result = objectAwayTeam.getString(COUNTRY) + " " + objectAwayTeam.getString(GOALS) + " - " + objectHomeTeam.getString(GOALS) + " " + objectHomeTeam.getString(COUNTRY);
-                teams.add(result);
+                match = new Match();
+                match.setmTeams(objectAwayTeam.getString(CODE) + " " + objectAwayTeam.getString(GOALS) + " - " + objectHomeTeam.getString(GOALS) + " " + objectHomeTeam.getString(CODE));
+                match.setmLocation(objectMatch.getString(LOCATION));
+                matches.add(match);
             }
         } catch (JSONException e) {
             e.printStackTrace();
         }
-
-        return teams;
-
+        return matches;
     }
-
-    class FetchTeamsTask extends AsyncTask<String, Void, List<String>> {
-
-        @Override
-        protected List<String> doInBackground(String... params) {
-            String country;
-            String response = "";
-            List<String> listOfTeams = null;
-            if (params.length > 0) {
-                country = params[0];
-            } else {
-                country = "USA";
-            }
-            try {
-                URL url = constructURLQuery(country);
-                HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
-                try {
-                    response = readFullResponse(httpURLConnection.getInputStream());
-                    listOfTeams = parseResponse(response);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } finally {
-                    httpURLConnection.disconnect();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return listOfTeams;
-        }
-
-        @Override
-        protected void onPostExecute(List<String> response) {
-            super.onPostExecute(response);
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, response);
-            mListViewMatches.setAdapter(adapter);
-        }
-    }
-
-
 }
