@@ -34,9 +34,11 @@ public class MatchAdapter extends ArrayAdapter<Match> {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-        View rowView = reuseOrGenerateRowView(convertView, parent);
+        View rowView;
+        rowView = reuseOrGenerateRowView(convertView, parent);
         displayRepoInRow(position, rowView);
-        return super.getView(position, convertView, parent);
+
+        return rowView;
     }
 
     private View reuseOrGenerateRowView(View convertView, ViewGroup parent) {
